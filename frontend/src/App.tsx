@@ -16,6 +16,12 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { OrdersPage } from './pages/OrdersPage';
+import { AdminLayout } from './components/admin/AdminLayout';
+import { DashboardPage } from './pages/admin/DashboardPage';
+import { AdminProductsPage } from './pages/admin/AdminProductsPage';
+import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AdminCouponsPage } from './pages/admin/AdminCouponsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +51,13 @@ function App() {
               <Route path="/orden-exitosa" element={<OrderSuccessPage />} />
               <Route path="/perfil" element={<ProfilePage />} />
               <Route path="/mis-ordenes" element={<OrdersPage />} />
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<DashboardPage />} />
+                <Route path="productos" element={<AdminProductsPage />} />
+                <Route path="ordenes" element={<AdminOrdersPage />} />
+                <Route path="usuarios" element={<AdminUsersPage />} />
+                <Route path="cupones" element={<AdminCouponsPage />} />
+              </Route>
             </Routes>
           </main>
           <Footer />
