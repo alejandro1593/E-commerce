@@ -14,7 +14,7 @@ export async function createPaymentIntent(req: AuthRequest, res: Response, next:
 
 export async function confirmPayment(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const result = await paymentsService.confirmPayment(req.body.paymentIntentId);
+    const result = await paymentsService.confirmPayment(req.user!.id, req.body.paymentIntentId);
     return ApiResponse.success(res, result, 'Payment confirmed');
   } catch (error) {
     next(error);

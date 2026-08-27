@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { useCart } from '../../hooks/useCart';
+import { User } from '../../types';
 
 interface CheckoutFormProps {
   onSubmit: (data: {
@@ -11,14 +12,15 @@ interface CheckoutFormProps {
     shippingAddress: { street: string; city: string; state: string; zipCode: string; country: string };
   }) => void;
   isLoading: boolean;
+  user?: User | null;
 }
 
-export function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps) {
+export function CheckoutForm({ onSubmit, isLoading, user }: CheckoutFormProps) {
   const { total } = useCart();
   const [formData, setFormData] = useState({
-    email: '',
-    name: '',
-    phone: '',
+    email: user?.email || '',
+    name: user?.name || '',
+    phone: user?.phone || '',
     address: '',
     city: '',
     state: '',
@@ -67,7 +69,7 @@ export function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps) {
       </div>
 
       <Button type="submit" size="lg" className="w-full" variant="neon" isLoading={isLoading}>
-        Pagar {formatPrice(total)}
+        Continuar al pago · {formatPrice(total)}
       </Button>
     </form>
   );
