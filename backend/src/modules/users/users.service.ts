@@ -1,5 +1,6 @@
 import prisma from '../../config/database';
 import { ApiError } from '../../shared/utils/ApiError';
+import bcrypt from 'bcryptjs';
 
 function sanitizeUser(user: any) {
   const { password, ...rest } = user;
@@ -55,4 +56,18 @@ export async function deleteAddress(userId: string, addressId: string) {
   if (!address) throw ApiError.notFound('Address not found');
 
   await prisma.address.delete({ where: { id: addressId } });
+}
+
+export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw ApiError.notFound('User not found');
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) throw ApiError.unauthorized('Current password is incorrect');
+
+  const hashedPassword = await bcrypt.hash(newPassword, 12);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashedPassword },
+  });
 }

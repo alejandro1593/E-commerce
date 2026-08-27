@@ -47,3 +47,12 @@ export async function deleteAddress(req: AuthRequest, res: Response, next: NextF
     next(error);
   }
 }
+
+export async function changePassword(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    await usersService.changePassword(req.user!.id, req.body.currentPassword, req.body.newPassword);
+    return ApiResponse.success(res, null, 'Password changed successfully');
+  } catch (error) {
+    next(error);
+  }
+}
