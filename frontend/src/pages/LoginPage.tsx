@@ -42,6 +42,9 @@ export function LoginPage() {
               ¿No tienes cuenta?{' '}
               <Link to="/registro" className="text-neon-cyan hover:text-neon-cyan/80 transition-colors duration-300">Regístrate</Link>
             </p>
+            <Link to="/olvide-contrasena" className="inline-block mt-2 text-sm text-dark-900/50 hover:text-neon-cyan transition-colors duration-300">
+              ¿Olvidaste tu contraseña?
+            </Link>
           </div>
         </CardContent>
       </Card>

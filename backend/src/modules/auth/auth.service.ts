@@ -150,19 +150,22 @@ export async function forgotPassword(email: string) {
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      password: user.password,
+      resetToken,
+      resetTokenExpiry,
     },
   });
 
   const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${resetToken}`;
   const emailContent = passwordResetEmail(resetUrl);
   await sendEmail({ to: user.email, ...emailContent });
+  console.log(`🔗 Password reset link: ${resetUrl}`);
 }
 
 export async function resetPassword(token: string, newPassword: string) {
   const user = await prisma.user.findFirst({
     where: {
-      password: { not: '' },
+      resetToken: token,
+      resetTokenExpiry: { gte: new Date() },
     },
   });
 
@@ -173,7 +176,11 @@ export async function resetPassword(token: string, newPassword: string) {
   const hashedPassword = await bcrypt.hash(newPassword, 12);
   await prisma.user.update({
     where: { id: user.id },
-    data: { password: hashedPassword },
+    data: {
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpiry: null,
+    },
   });
 
   await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
