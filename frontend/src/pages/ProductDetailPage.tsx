@@ -5,6 +5,7 @@ import { Badge } from '../components/ui/Badge';
 import { Input } from '../components/ui/Input';
 import { Loading } from '../components/ui/Loading';
 import { ImageGallery } from '../components/products/ImageGallery';
+import { ReviewsSection } from '../components/products/ReviewsSection';
 import { useProduct } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
 import { formatPrice } from '../lib/utils';
@@ -106,6 +107,8 @@ export function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      <ReviewsSection productId={product.id} />
     </div>
   );
 }
