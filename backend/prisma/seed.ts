@@ -107,7 +107,7 @@ async function main() {
       stock: 75,
       categoryId: home.id,
       images: [
-        { url: 'https://images.unsplash.com/photo-1507473885765-e6ed057ab788?w=800', alt: 'Lámpara LED' },
+        { url: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800', alt: 'Lámpara LED' },
       ],
     },
     {
