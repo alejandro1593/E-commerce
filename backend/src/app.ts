@@ -57,7 +57,7 @@ app.get('/api/v1/admin/dashboard', authenticate, authorize('ADMIN'), adminContro
 app.get('/api/v1/admin/orders', authenticate, authorize('ADMIN'), adminController.getAllOrders);
 app.put('/api/v1/admin/orders/:id/status', authenticate, authorize('ADMIN'), adminController.updateOrderStatus);
 app.get('/api/v1/admin/users', authenticate, authorize('ADMIN'), adminController.getAllUsers);
-app.put('/api/v1/admin/users/:id', authenticate, authorize('ADMIN'), adminController.updateUserStatus);
+app.put('/api/v1/admin/users/:id', authenticate, authorize('ADMIN'), adminController.updateUser);
 
 app.use(errorHandler);
 

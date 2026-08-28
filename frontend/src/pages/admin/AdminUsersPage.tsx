@@ -4,15 +4,28 @@ import { adminApi } from '../../api/admin.api';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Modal } from '../../components/ui/Modal';
 import { Loading } from '../../components/ui/Loading';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useUIStore } from '../../store/uiStore';
 import { formatDate } from '../../lib/utils';
+import { AdminUser } from '../../api/admin.api';
 
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
   const addToast = useUIStore((s) => s.addToast);
   const [page, setPage] = useState(1);
+
+  const [editing, setEditing] = useState<AdminUser | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    role: 'USER' as 'USER' | 'ADMIN',
+    isActive: true,
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-users', page],
@@ -31,13 +44,37 @@ export function AdminUsersPage() {
     },
   });
 
+  const openEdit = (user: AdminUser) => {
+    setEditing(user);
+    setForm({ name: user.name, email: user.email, role: user.role, isActive: user.isActive });
+    setIsModalOpen(true);
+  };
+
+  const editMutation = useMutation({
+    mutationFn: () =>
+      adminApi.updateUser(editing!.id, {
+        name: form.name,
+        email: form.email,
+        role: form.role,
+        isActive: form.isActive,
+      }),
+    onSuccess: () => {
+      addToast({ message: 'Usuario modificado correctamente', type: 'success' });
+      setIsModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (err: any) => {
+      addToast({ message: err.response?.data?.message || 'Error al modificar usuario', type: 'error' });
+    },
+  });
+
   const users = data?.data || [];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-dark-900">Usuarios</h1>
-        <p className="text-dark-900/60">Administra las cuentas de los usuarios</p>
+        <p className="text-dark-900/60">Administra las cuentas de los usuarios registrados</p>
       </div>
 
       <Card>
@@ -87,15 +124,20 @@ export function AdminUsersPage() {
                           {u.isActive ? 'Activo' : 'Inactivo'}
                         </Badge>
                       </td>
-                      <td className="px-6 py-3 text-right">
-                        <Button
-                          size="sm"
-                          variant={u.isActive ? 'danger' : 'outline'}
-                          disabled={u.role === 'ADMIN'}
-                          onClick={() => statusMutation.mutate({ id: u.id, isActive: !u.isActive })}
-                        >
-                          {u.isActive ? 'Desactivar' : 'Activar'}
-                        </Button>
+                      <td className="px-6 py-3">
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" variant="outline" onClick={() => openEdit(u)}>
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={u.isActive ? 'danger' : 'outline'}
+                            disabled={u.role === 'ADMIN'}
+                            onClick={() => statusMutation.mutate({ id: u.id, isActive: !u.isActive })}
+                          >
+                            {u.isActive ? 'Desactivar' : 'Activar'}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -119,6 +161,58 @@ export function AdminUsersPage() {
           </Button>
         </div>
       )}
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={`Editar usuario — ${editing?.name || ''}`}
+        size="md"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Nombre"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+          />
+          <Select
+            label="Rol"
+            value={form.role}
+            onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as 'USER' | 'ADMIN' }))}
+            options={[
+              { value: 'USER', label: 'Usuario' },
+              { value: 'ADMIN', label: 'Administrador' },
+            ]}
+          />
+          <div className="flex items-center gap-3">
+            <input
+              id="user-active"
+              type="checkbox"
+              checked={form.isActive}
+              onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+              className="w-4 h-4 text-neon-cyan"
+            />
+            <label htmlFor="user-active" className="text-sm text-dark-900/70">Usuario activo</label>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+            <Button
+              variant="neon"
+              isLoading={editMutation.isPending}
+              disabled={!form.name || !form.email}
+              onClick={() => editMutation.mutate()}
+            >
+              Guardar cambios
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

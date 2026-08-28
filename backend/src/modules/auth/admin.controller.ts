@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../../shared/types';
 import { ApiResponse } from '../../shared/utils/apiResponse';
+import { ApiError } from '../../shared/utils/ApiError';
 import prisma from '../../config/database';
 
 export async function getDashboard(req: AuthRequest, res: Response, next: NextFunction) {
@@ -126,14 +127,29 @@ export async function getAllUsers(req: any, res: Response, next: NextFunction) {
   }
 }
 
-export async function updateUserStatus(req: AuthRequest, res: Response, next: NextFunction) {
+export async function updateUser(req: AuthRequest, res: Response, next: NextFunction) {
   try {
+    const data: any = {};
+    if (req.body.name !== undefined) data.name = req.body.name;
+    if (req.body.email !== undefined) data.email = req.body.email;
+    if (req.body.role !== undefined) {
+      if (!['USER', 'ADMIN'].includes(req.body.role)) {
+        throw ApiError.badRequest('Invalid role');
+      }
+      data.role = req.body.role;
+    }
+    if (req.body.isActive !== undefined) data.isActive = req.body.isActive;
+
+    if (Object.keys(data).length === 0) {
+      throw ApiError.badRequest('No fields to update');
+    }
+
     const user = await prisma.user.update({
       where: { id: req.params.id },
-      data: { isActive: req.body.isActive },
+      data,
       select: { id: true, email: true, name: true, role: true, isActive: true },
     });
-    return ApiResponse.success(res, user, 'User status updated');
+    return ApiResponse.success(res, user, 'User updated');
   } catch (error) {
     next(error);
   }

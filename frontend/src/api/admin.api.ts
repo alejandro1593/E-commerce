@@ -46,6 +46,9 @@ export const adminApi = {
   updateUserStatus: (id: string, isActive: boolean) =>
     api.put(`/admin/users/${id}`, { isActive }).then((r) => r.data.data),
 
+  updateUser: (id: string, data: { name?: string; email?: string; role?: 'USER' | 'ADMIN'; isActive?: boolean }) =>
+    api.put(`/admin/users/${id}`, data).then((r) => r.data.data),
+
   listProducts: (params?: { page?: number; limit?: number; search?: string }) =>
     api.get<PaginatedResponse<Product>>('/admin/products', { params }).then((r) => r.data),
 
