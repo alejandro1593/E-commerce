@@ -58,8 +58,13 @@ export interface Cart {
   id: string;
   userId: string;
   items: CartItem[];
-  couponCode?: string;
-  discount?: number;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  itemCount: number;
+  coupon?: Coupon;
+  couponId?: string;
 }
 
 export interface CartItem {

@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { to: '/admin/cupones', label: 'Cupones', end: false, icon: '🎟️' },
 ];
 
-export function AdminLayout() {
+export function AdminLayout({ children }: { children?: React.ReactNode }) {
   const { user, isAuthenticated } = useAuthStore();
   const location = useLocation();
 
@@ -79,6 +79,7 @@ export function AdminLayout() {
               ))}
             </nav>
             <Outlet />
+            {children}
           </div>
         </div>
       </div>

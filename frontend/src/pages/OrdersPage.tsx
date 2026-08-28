@@ -1,9 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ErrorState } from '../components/ui/ErrorState';
 import { Loading } from '../components/ui/Loading';
 import { ordersApi } from '../api/orders.api';
+import { useUIStore } from '../store/uiStore';
 import { formatPrice, formatDateTime } from '../lib/utils';
 import { ORDER_STATUS_LABELS } from '../lib/constants';
 import { Order } from '../types';
@@ -17,15 +20,42 @@ const STATUS_VARIANT: Record<string, string> = {
   CANCELLED: 'danger',
 };
 
+const CANCELLABLE: Record<string, boolean> = {
+  PENDING: true,
+  CONFIRMED: true,
+};
+
 export function OrdersPage() {
-  const { data, isLoading } = useQuery({
+  const queryClient = useQueryClient();
+  const addToast = useUIStore((s) => s.addToast);
+
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['orders'],
     queryFn: () => ordersApi.list(),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: ordersApi.cancel,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      addToast({ message: 'Orden cancelada correctamente', type: 'success' });
+    },
+    onError: (error: any) => {
+      addToast({ message: error.response?.data?.message || 'No se pudo cancelar la orden', type: 'error' });
+    },
   });
 
   const orders = data?.data || [];
 
   if (isLoading) return <Loading message="Cargando órdenes..." />;
+
+  if (isError) {
+    return (
+      <div className="container py-8">
+        <ErrorState message="No pudimos cargar tus órdenes." />
+      </div>
+    );
+  }
 
   if (orders.length === 0) {
     return (
@@ -66,6 +96,20 @@ export function OrdersPage() {
               </div>
               <div className="flex items-center justify-between pt-4 border-t border-cream-300/50">
                 <span className="font-semibold text-lg text-dark-900">Total: <span className="text-gradient">{formatPrice(order.total)}</span></span>
+                {CANCELLABLE[order.status] && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={cancelMutation.isPending}
+                    onClick={() => {
+                      if (confirm('¿Estás seguro de que quieres cancelar esta orden?')) {
+                        cancelMutation.mutate(order.id);
+                      }
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -108,6 +108,8 @@ export function AdminProductsPage() {
       addToast({ message: editing ? 'Producto actualizado' : 'Producto creado', type: 'success' });
       setIsModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product'] });
     },
     onError: (err: any) => {
       addToast({ message: err.response?.data?.message || 'Error al guardar producto', type: 'error' });
@@ -119,6 +121,8 @@ export function AdminProductsPage() {
     onSuccess: () => {
       addToast({ message: 'Producto eliminado', type: 'success' });
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product'] });
     },
     onError: (err: any) => {
       addToast({ message: err.response?.data?.message || 'Error al eliminar', type: 'error' });

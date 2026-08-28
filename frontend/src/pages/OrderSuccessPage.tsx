@@ -4,7 +4,14 @@ import { Card, CardContent } from '../components/ui/Card';
 
 export function OrderSuccessPage() {
   const location = useLocation();
-  const orderId = (location.state as any)?.orderId || 'N/A';
+  const orderId =
+    (location.state as any)?.orderId ||
+    sessionStorage.getItem('lastOrderId') ||
+    'N/A';
+
+  if ((location.state as any)?.orderId) {
+    sessionStorage.setItem('lastOrderId', (location.state as any).orderId);
+  }
 
   return (
     <div className="container py-12">

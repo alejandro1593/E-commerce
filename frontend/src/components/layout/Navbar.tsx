@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
+import { useCart } from '../../hooks/useCart';
 
 export function Navbar() {
-  const itemCount = useCartStore((state) => state.getItemCount());
   const { user, isAuthenticated, logout } = useAuthStore();
   const toggleCart = useUIStore((s) => s.toggleCart);
+  const { itemCount } = useCart();
 
   return (
     <nav className="sticky top-0 z-40 bg-cream-100/80 backdrop-blur-xl border-b border-cream-300/50">

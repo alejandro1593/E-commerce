@@ -16,6 +16,8 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { OrdersPage } from './pages/OrdersPage';
+import { CategoriesPage } from './pages/CategoriesPage';
+import { CreateProductPage } from './pages/CreateProductPage';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { DashboardPage } from './pages/admin/DashboardPage';
 import { AdminProductsPage } from './pages/admin/AdminProductsPage';
@@ -42,6 +44,8 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/productos" element={<ProductsPage />} />
               <Route path="/productos/:slug" element={<ProductDetailPage />} />
+              <Route path="/categorias" element={<CategoriesPage />} />
+              <Route path="/createProducts" element={<CreateProductPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/registro" element={<RegisterPage />} />
               <Route path="/olvide-contrasena" element={<ForgotPasswordPage />} />

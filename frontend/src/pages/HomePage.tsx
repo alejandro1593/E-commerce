@@ -1,11 +1,13 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { useFeaturedProducts } from '../hooks/useProducts';
 import { ProductCard } from '../components/products/ProductCard';
 import { Loading } from '../components/ui/Loading';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export function HomePage() {
-  const { data: featuredProducts, isLoading } = useFeaturedProducts();
+  const navigate = useNavigate();
+  const { data: featuredProducts = [], isLoading, isError } = useFeaturedProducts();
 
   return (
     <div>
@@ -40,22 +42,31 @@ export function HomePage() {
       </section>
 
       {/* Featured Products */}
-      {featuredProducts && featuredProducts.length > 0 && (
-        <section className="py-20 bg-cream-100/50">
-          <div className="container">
-            <h2 className="text-3xl font-bold text-center mb-12 text-dark-900">Productos Destacados</h2>
-            {isLoading ? (
-              <Loading message="Cargando productos..." />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {featuredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+      <section className="py-20 bg-cream-100/50">
+        <div className="container">
+          <h2 className="text-3xl font-bold text-center mb-12 text-dark-900">Productos Destacados</h2>
+          {isLoading ? (
+            <Loading message="Cargando productos..." />
+          ) : isError ? (
+            <EmptyState
+              title="No pudimos cargar los productos destacados"
+              description="Intenta recargar la página en unos momentos."
+            />
+          ) : featuredProducts && featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Pronto habrá productos destacados"
+              description="Mientras tanto, explora nuestro catálogo completo."
+              action={{ label: 'Ver productos', onClick: () => navigate('/productos') }}
+            />
+          )}
+        </div>
+      </section>
 
       {/* Features */}
       <section className="py-20 bg-cream-100/50">

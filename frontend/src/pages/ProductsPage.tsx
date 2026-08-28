@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Input } from '../components/ui/Input';
 import { Pagination } from '../components/ui/Pagination';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Loading } from '../components/ui/Loading';
+import { ErrorState } from '../components/ui/ErrorState';
 import { ProductGrid } from '../components/products/ProductGrid';
 import { ProductFilters } from '../components/products/ProductFilters';
 import { useProducts } from '../hooks/useProducts';
@@ -10,14 +12,15 @@ import { useDebounce } from '../hooks/useDebounce';
 import { ITEMS_PER_PAGE } from '../lib/constants';
 
 export function ProductsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('newest');
   const [page, setPage] = useState(1);
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(searchParams.get('cat') || '');
 
   const debouncedSearch = useDebounce(search, 400);
 
-  const { data, isLoading } = useProducts({
+  const { data, isLoading, isError } = useProducts({
     page,
     limit: ITEMS_PER_PAGE,
     sort,
@@ -28,8 +31,26 @@ export function ProductsPage() {
   const products = data?.data || [];
   const totalPages = data?.pagination?.totalPages || 1;
 
+  const handleCategoryChange = (c: string) => {
+    setCategory(c);
+    setPage(1);
+    if (c) {
+      setSearchParams({ cat: c });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   if (isLoading && page === 1) {
     return <Loading message="Cargando productos..." />;
+  }
+
+  if (isError) {
+    return (
+      <div className="container py-8">
+        <ErrorState message="No pudimos cargar los productos. Intenta de nuevo." />
+      </div>
+    );
   }
 
   return (
@@ -51,7 +72,7 @@ export function ProductsPage() {
           sort={sort}
           category={category}
           onSortChange={(s) => { setSort(s); setPage(1); }}
-          onCategoryChange={(c) => { setCategory(c); setPage(1); }}
+          onCategoryChange={handleCategoryChange}
         />
       </div>
 
@@ -59,7 +80,7 @@ export function ProductsPage() {
         <EmptyState
           title="No se encontraron productos"
           description="Intenta con otros términos de búsqueda"
-          action={{ label: 'Limpiar búsqueda', onClick: () => { setSearch(''); setCategory(''); setPage(1); } }}
+          action={{ label: 'Limpiar búsqueda', onClick: () => { setSearch(''); setCategory(''); setPage(1); setSearchParams({}); } }}
         />
       ) : (
         <>

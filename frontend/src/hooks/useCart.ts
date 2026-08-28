@@ -1,15 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cartApi } from '../api/cart.api';
 import { useUIStore } from '../store/uiStore';
+import { useAuthStore } from '../store/authStore';
 
 export function useCart() {
   const addToast = useUIStore((s) => s.addToast);
   const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const cartQuery = useQuery({
     queryKey: ['cart'],
     queryFn: cartApi.get,
     staleTime: 30000,
+    enabled: isAuthenticated,
   });
 
   const addItemMutation = useMutation({
@@ -69,12 +72,12 @@ export function useCart() {
   return {
     cart,
     items: cart?.items || [],
-    subtotal: (cart as any)?.subtotal || 0,
-    tax: (cart as any)?.tax || 0,
-    discount: (cart as any)?.discount || 0,
-    total: (cart as any)?.total || 0,
-    itemCount: (cart as any)?.itemCount || 0,
-    couponCode: (cart as any)?.coupon?.code || null,
+    subtotal: cart?.subtotal || 0,
+    tax: cart?.tax || 0,
+    discount: cart?.discount || 0,
+    total: cart?.total || 0,
+    itemCount: cart?.itemCount || 0,
+    couponCode: cart?.coupon?.code || null,
     isLoading: cartQuery.isLoading,
     addItem: addItemMutation.mutate,
     updateItem: updateItemMutation.mutate,
