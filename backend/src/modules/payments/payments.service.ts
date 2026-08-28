@@ -33,6 +33,9 @@ export async function createPaymentIntent(userId: string, orderId: string) {
   const paymentIntent = await stripe.paymentIntents.create({
     amount: Math.round(order.total * 100),
     currency: 'mxn',
+    // 'card' habilita tarjeta + monederos digitales (Apple Pay, Google Pay)
+    // de forma transparente cuando el merchant de Stripe está verificado.
+    payment_method_types: ['card'],
     metadata: { orderId: order.id, userId },
   });
 

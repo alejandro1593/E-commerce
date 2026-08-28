@@ -47,6 +47,24 @@ export function StripePaymentForm({ clientSecret: _clientSecret, paymentIntentId
           <p className="text-sm text-dark-900/70 mb-4">Conectando con la pasarela de pago...</p>
         )}
 
+        <div className="border border-cream-300/50 bg-cream-100/40 rounded-xl p-4 mb-4">
+          <p className="text-sm text-dark-900/70 mb-2">
+            <span className="font-semibold text-neon-cyan">Métodos de pago disponibles:</span>
+          </p>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {['💳 Tarjeta', '🍎 Apple Pay', '🅿️ Google Pay'].map((m) => (
+              <span key={m} className="px-2 py-1 bg-white/70 border border-cream-300 rounded-lg text-dark-900/70">
+                {m}
+              </span>
+            ))}
+          </div>
+          <p className="text-xs text-dark-900/50 mt-2">
+            Apple Pay y Google Pay se habilitan automáticamente a través de Stripe cuando el negocio
+            está configurado con llaves reales y el merchant verificado. PayPal puede añadirse como
+            método adicional desde el dashboard de Stripe.
+          </p>
+        </div>
+
         <p className="text-xs text-dark-900/50 mt-2">
           Al confirmar se completará tu orden por{' '}
           <span className="font-medium text-dark-900">
