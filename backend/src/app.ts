@@ -16,6 +16,7 @@ import paymentsRoutes from './modules/payments/payments.routes';
 import reviewsRoutes from './modules/reviews/reviews.routes';
 import couponsRoutes from './modules/coupons/coupons.routes';
 import webhooksRoutes from './modules/webhooks/webhooks.routes';
+import { uploadsRouter } from './modules/uploads/uploads.routes';
 
 import { adminProductsRouter } from './modules/products/products.routes';
 import { adminCategoriesRouter } from './modules/categories/categories.routes';
@@ -52,6 +53,7 @@ app.use('/api/v1/payments', paymentsRoutes);
 app.use('/api/v1/admin/products', authenticate, authorize('ADMIN'), adminProductsRouter);
 app.use('/api/v1/admin/categories', authenticate, authorize('ADMIN'), adminCategoriesRouter);
 app.use('/api/v1/admin/coupons', couponsRoutes);
+app.use('/api/v1/uploads', authenticate, authorize('ADMIN'), uploadsRouter);
 
 app.get('/api/v1/admin/dashboard', authenticate, authorize('ADMIN'), adminController.getDashboard);
 app.get('/api/v1/admin/orders', authenticate, authorize('ADMIN'), adminController.getAllOrders);

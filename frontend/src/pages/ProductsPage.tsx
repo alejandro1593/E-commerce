@@ -17,6 +17,8 @@ export function ProductsPage() {
   const [sort, setSort] = useState('newest');
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState(searchParams.get('cat') || '');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
 
   const debouncedSearch = useDebounce(search, 400);
 
@@ -26,6 +28,8 @@ export function ProductsPage() {
     sort,
     category: category || undefined,
     search: debouncedSearch || undefined,
+    minPrice: minPrice ? Number(minPrice) : undefined,
+    maxPrice: maxPrice ? Number(maxPrice) : undefined,
   });
 
   const products = data?.data || [];
@@ -39,6 +43,16 @@ export function ProductsPage() {
     } else {
       setSearchParams({});
     }
+  };
+
+  const clearFilters = () => {
+    setMinPrice('');
+    setMaxPrice('');
+    setCategory('');
+    setSearch('');
+    setSort('newest');
+    setPage(1);
+    setSearchParams({});
   };
 
   if (isLoading && page === 1) {
@@ -71,16 +85,21 @@ export function ProductsPage() {
         <ProductFilters
           sort={sort}
           category={category}
+          minPrice={minPrice}
+          maxPrice={maxPrice}
           onSortChange={(s) => { setSort(s); setPage(1); }}
           onCategoryChange={handleCategoryChange}
+          onMinPriceChange={(v) => { setMinPrice(v); setPage(1); }}
+          onMaxPriceChange={(v) => { setMaxPrice(v); setPage(1); }}
+          onClear={clearFilters}
         />
       </div>
 
       {products.length === 0 ? (
         <EmptyState
           title="No se encontraron productos"
-          description="Intenta con otros términos de búsqueda"
-          action={{ label: 'Limpiar búsqueda', onClick: () => { setSearch(''); setCategory(''); setPage(1); setSearchParams({}); } }}
+          description="Intenta con otros términos de búsqueda o filtros"
+          action={{ label: 'Limpiar filtros', onClick: clearFilters }}
         />
       ) : (
         <>

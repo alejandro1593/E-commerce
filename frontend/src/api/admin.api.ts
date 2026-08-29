@@ -16,6 +16,9 @@ export interface DashboardStats {
     user: { name: string; email: string };
   }>;
   ordersByStatus: Array<{ status: string; count: number }>;
+  topProducts: Array<{ productId: string; name: string; quantity: number }>;
+  lowStockProducts: Array<{ id: string; name: string; sku: string; stock: number }>;
+  salesPerDay: Array<{ day: string; revenue: number; orders: number }>;
 }
 
 export interface AdminUser {
@@ -72,4 +75,14 @@ export const adminApi = {
 
   deleteCoupon: (id: string) =>
     api.delete(`/admin/coupons/${id}`).then((r) => r.data.data),
+
+  uploadImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api
+      .post<{ data: { url: string } }>('/uploads/images', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data.data);
+  },
 };

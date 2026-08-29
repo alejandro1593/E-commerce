@@ -10,6 +10,8 @@ export async function getDashboard(req: AuthRequest, res: Response, next: NextFu
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const startOfLast14Days = new Date(now.getTime() - 13 * 24 * 60 * 60 * 1000);
+    startOfLast14Days.setHours(0, 0, 0, 0);
 
     const [
       totalUsers,
@@ -20,6 +22,9 @@ export async function getDashboard(req: AuthRequest, res: Response, next: NextFu
       yearlyRevenue,
       recentOrders,
       ordersByStatus,
+      topProducts,
+      lowStockProducts,
+      salesPerDay,
     ] = await Promise.all([
       prisma.user.count({ where: { role: 'USER' } }),
       prisma.product.count(),
@@ -42,7 +47,38 @@ export async function getDashboard(req: AuthRequest, res: Response, next: NextFu
         by: ['status'],
         _count: true,
       }),
+      prisma.orderItem.groupBy({
+        by: ['productId'],
+        _sum: { quantity: true },
+        orderBy: { _sum: { quantity: 'desc' } },
+        take: 5,
+      }),
+      prisma.product.findMany({
+        where: { stock: { lte: 10 } },
+        orderBy: { stock: 'asc' },
+        take: 5,
+        select: { id: true, name: true, sku: true, stock: true },
+      }),
+      prisma.$queryRaw`
+        SELECT TO_CHAR(date_trunc('day', o."createdAt"), 'YYYY-MM-DD') AS day,
+               COALESCE(SUM(o."total"), 0) AS revenue,
+               COUNT(*)::int AS orders
+        FROM "orders" o
+        WHERE o."createdAt" >= ${startOfLast14Days}
+          AND o."status" != 'CANCELLED'
+        GROUP BY date_trunc('day', o."createdAt")
+        ORDER BY date_trunc('day', o."createdAt") ASC
+      `,
     ]);
+
+    const topProductIds = topProducts.map((p) => p.productId);
+    const topProductsWithNames = topProductIds.length
+      ? await prisma.product.findMany({
+          where: { id: { in: topProductIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const productNameMap = new Map(topProductsWithNames.map((p) => [p.id, p.name]));
 
     return ApiResponse.success(res, {
       totalUsers,
@@ -53,6 +89,17 @@ export async function getDashboard(req: AuthRequest, res: Response, next: NextFu
       yearlyRevenue: yearlyRevenue._sum.total || 0,
       recentOrders,
       ordersByStatus: ordersByStatus.map((s) => ({ status: s.status, count: s._count })),
+      topProducts: topProducts.map((p) => ({
+        productId: p.productId,
+        name: productNameMap.get(p.productId) || 'Producto',
+        quantity: p._sum.quantity || 0,
+      })),
+      lowStockProducts,
+      salesPerDay: (salesPerDay as any[]).map((s) => ({
+        day: s.day,
+        revenue: Number(s.revenue),
+        orders: s.orders,
+      })),
     });
   } catch (error) {
     next(error);

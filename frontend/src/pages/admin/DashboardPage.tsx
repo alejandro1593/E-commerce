@@ -112,7 +112,90 @@ export function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <h2 className="font-semibold text-dark-900">Top productos</h2>
+          </CardHeader>
+          <CardContent>
+            {stats.topProducts.length === 0 ? (
+              <p className="text-dark-900/60 text-sm">Sin ventas todavía</p>
+            ) : (
+              <div className="space-y-3">
+                {stats.topProducts.map((p, i) => (
+                  <div key={p.productId} className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-cream-200 text-xs font-semibold text-dark-900/60 shrink-0">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-dark-900 truncate">{p.name}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-dark-900">{p.quantity} vendidos</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <h2 className="font-semibold text-dark-900">Stock bajo</h2>
+          </CardHeader>
+          <CardContent>
+            {stats.lowStockProducts.length === 0 ? (
+              <p className="text-dark-900/60 text-sm">Todo el inventario está bien</p>
+            ) : (
+              <div className="space-y-3">
+                {stats.lowStockProducts.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-dark-900 truncate">{p.name}</p>
+                      <p className="text-xs text-dark-900/50">{p.sku}</p>
+                    </div>
+                    <Badge variant={p.stock === 0 ? 'danger' : 'warning'}>
+                      {p.stock === 0 ? 'Sin stock' : `${p.stock} uds.`}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <h2 className="font-semibold text-dark-900">Ventas por día (últimos 14 días)</h2>
+        </CardHeader>
+        <CardContent>
+          {stats.salesPerDay.length === 0 ? (
+            <p className="text-dark-900/60 text-sm">Sin ventas en los últimos 14 días</p>
+          ) : (
+            <div className="flex items-end gap-2 h-40">
+              {stats.salesPerDay.map((s) => {
+                const maxRevenue = Math.max(1, ...stats.salesPerDay.map((d) => d.revenue));
+                const height = `${Math.max(6, (s.revenue / maxRevenue) * 100)}%`;
+                return (
+                  <div key={s.day} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                    <span className="text-[10px] text-dark-900/50 truncate w-full text-center" title={formatPrice(s.revenue)}>
+                      {formatPrice(s.revenue)}
+                    </span>
+                    <div
+                      className="w-full bg-gradient-to-t from-neon-cyan/40 to-neon-cyan rounded-t-lg"
+                      style={{ height }}
+                      title={`${s.day}: ${formatPrice(s.revenue)} (${s.orders} órdenes)`}
+                    />
+                    <span className="text-[10px] text-dark-900/40">
+                      {new Date(s.day + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex items-center justify-between">

@@ -16,16 +16,3 @@ export interface TokenPayload extends JwtPayload {
   email: string;
   role: 'USER' | 'ADMIN';
 }
-
-export interface PaginationQuery {
-  page?: string;
-  limit?: string;
-}
-
-export interface ProductFilterQuery extends PaginationQuery {
-  category?: string;
-  sort?: string;
-  minPrice?: string;
-  maxPrice?: string;
-  search?: string;
-}

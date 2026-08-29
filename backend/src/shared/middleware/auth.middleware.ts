@@ -32,26 +32,3 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
     next(error);
   }
 }
-
-export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return next();
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as TokenPayload;
-
-    req.user = {
-      id: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
-    };
-
-    next();
-  } catch {
-    next();
-  }
-}

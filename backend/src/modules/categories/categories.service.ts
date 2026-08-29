@@ -3,17 +3,30 @@ import { slugify } from '../../shared/utils/slugify';
 import { ApiError } from '../../shared/utils/ApiError';
 
 export async function listCategories() {
-  return prisma.category.findMany({
-    where: { parentId: null, isActive: true },
-    include: {
-      children: {
-        where: { isActive: true },
-        include: { _count: { select: { products: true } } },
-      },
-      _count: { select: { products: true } },
-    },
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    include: { _count: { select: { products: true } } },
     orderBy: { name: 'asc' },
   });
+
+  const byParent = new Map<string | null, any[]>();
+  for (const category of categories) {
+    if (!byParent.has(category.parentId)) byParent.set(category.parentId, []);
+    byParent.get(category.parentId)!.push(category);
+  }
+
+  const activeIds = new Set(categories.map((c) => c.id));
+
+  const buildTree = (parentId: string | null): any[] =>
+    (byParent.get(parentId) || []).map((category) => ({
+      ...category,
+      children: buildTree(category.id),
+    }));
+
+  // Una categoría se trata como raíz si no tiene padre o si su padre no está
+  // entre las categorías activas (huérfana), evitando que se pierda del árbol.
+  const roots = categories.filter((c) => !c.parentId || !activeIds.has(c.parentId));
+  return roots.map((c) => ({ ...c, children: buildTree(c.id) }));
 }
 
 export async function getCategoryBySlug(slug: string) {

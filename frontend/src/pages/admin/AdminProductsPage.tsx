@@ -11,6 +11,7 @@ import { Loading } from '../../components/ui/Loading';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useUIStore } from '../../store/uiStore';
 import { formatPrice } from '../../lib/utils';
+import { buildCategorySelectOptions, categoryLabelByDepth } from '../../lib/categories';
 import { Product } from '../../types';
 
 const EMPTY_FORM = {
@@ -42,6 +43,7 @@ export function AdminProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-products', page, search],
@@ -55,6 +57,22 @@ export function AdminProductsPage() {
 
   const set = (key: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const onImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await adminApi.uploadImage(file);
+      setForm((f) => ({ ...f, imageUrl: result.url }));
+      addToast({ message: 'Imagen subida correctamente', type: 'success' });
+    } catch (err: any) {
+      addToast({ message: err.response?.data?.message || 'Error al subir la imagen', type: 'error' });
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
 
   const updateVariant = (index: number, field: 'name' | 'price' | 'stock', value: string) =>
     setVariants((vs) => vs.map((v, i) => (i === index ? { ...v, [field]: value } : v)));
@@ -280,13 +298,21 @@ export function AdminProductsPage() {
                 className="w-full px-4 py-3 bg-white/80 border border-cream-300 rounded-xl text-dark-900 focus:outline-none focus:ring-2 focus:ring-neon-cyan/50"
               >
                 <option value="">Seleccionar...</option>
-                {(categories || []).map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                {buildCategorySelectOptions(categories).map((opt) => (
+                  <option key={opt.value} value={opt.value}>{categoryLabelByDepth(opt)}</option>
                 ))}
               </select>
             </div>
           </div>
           <Input label="URL de imagen" value={form.imageUrl} onChange={set('imageUrl')} placeholder="https://..." />
+          <div className="flex items-center gap-3">
+            <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-cream-100 border border-cream-300 rounded-xl text-sm text-dark-900/70 cursor-pointer hover:bg-cream-200 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+              {uploading ? 'Subiendo...' : 'Subir imagen'}
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={onImageUpload} disabled={uploading} />
+            </label>
+            <p className="text-xs text-dark-900/50">Máx. 5MB (JPEG, PNG, WebP, GIF)</p>
+          </div>
           {form.imageUrl && (
             <img src={form.imageUrl} alt="Vista previa" className="h-24 w-24 object-cover rounded-lg" />
           )}

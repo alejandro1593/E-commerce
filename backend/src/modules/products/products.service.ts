@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../../config/database';
 import { slugify } from '../../shared/utils/slugify';
 import { paginate } from '../../shared/utils/paginate';
@@ -31,11 +32,44 @@ export async function listProducts(filters: {
     if (filters.minPrice !== undefined) where.price.gte = filters.minPrice;
     if (filters.maxPrice !== undefined) where.price.lte = filters.maxPrice;
   }
+
+  // Full-text search via the generated tsvector column (GIN indexed).
   if (filters.search) {
-    where.OR = [
-      { name: { contains: filters.search, mode: 'insensitive' } },
-      { description: { contains: filters.search, mode: 'insensitive' } },
-    ];
+    const totalRow = await prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(*)::bigint AS count
+      FROM "products" p
+      JOIN "categories" c ON c."id" = p."categoryId"
+      WHERE p."isActive" = true
+        AND p."searchVector" @@ websearch_to_tsquery('spanish', ${filters.search})
+        ${filters.category ? Prisma.sql`AND c."slug" = ${filters.category}` : Prisma.empty}
+        ${filters.minPrice !== undefined ? Prisma.sql`AND p."price" >= ${filters.minPrice}` : Prisma.empty}
+        ${filters.maxPrice !== undefined ? Prisma.sql`AND p."price" <= ${filters.maxPrice}` : Prisma.empty}`;
+
+    const total = Number(totalRow[0]?.count ?? 0);
+
+    const rows = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT p."id"
+      FROM "products" p
+      JOIN "categories" c ON c."id" = p."categoryId"
+      WHERE p."isActive" = true
+        AND p."searchVector" @@ websearch_to_tsquery('spanish', ${filters.search})
+        ${filters.category ? Prisma.sql`AND c."slug" = ${filters.category}` : Prisma.empty}
+        ${filters.minPrice !== undefined ? Prisma.sql`AND p."price" >= ${filters.minPrice}` : Prisma.empty}
+        ${filters.maxPrice !== undefined ? Prisma.sql`AND p."price" <= ${filters.maxPrice}` : Prisma.empty}
+      ORDER BY ts_rank(p."searchVector", websearch_to_tsquery('spanish', ${filters.search})) DESC, p."createdAt" DESC
+      LIMIT ${limit} OFFSET ${skip}`;
+
+    const ids = rows.map((r) => r.id);
+    const products = ids.length
+      ? await prisma.product.findMany({
+          where: { id: { in: ids } },
+          include: productInclude,
+        })
+      : [];
+    const byId = new Map(products.map((p) => [p.id, p]));
+    const ordered = ids.map((id) => byId.get(id)!).filter(Boolean);
+
+    return { products: ordered, total, page, limit };
   }
 
   let orderBy: any = { createdAt: 'desc' };
