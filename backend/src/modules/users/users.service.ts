@@ -48,6 +48,33 @@ export async function createAddress(userId: string, data: {
   });
 }
 
+export async function updateAddress(userId: string, addressId: string, data: {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  isDefault?: boolean;
+}) {
+  const address = await prisma.address.findFirst({
+    where: { id: addressId, userId },
+  });
+
+  if (!address) throw ApiError.notFound('Address not found');
+
+  if (data.isDefault) {
+    await prisma.address.updateMany({
+      where: { userId },
+      data: { isDefault: false },
+    });
+  }
+
+  return prisma.address.update({
+    where: { id: addressId },
+    data,
+  });
+}
+
 export async function deleteAddress(userId: string, addressId: string) {
   const address = await prisma.address.findFirst({
     where: { id: addressId, userId },

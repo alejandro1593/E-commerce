@@ -11,7 +11,7 @@ import { Loading } from '../../components/ui/Loading';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useUIStore } from '../../store/uiStore';
 import { formatPrice } from '../../lib/utils';
-import { Product, Variant } from '../../types';
+import { Product } from '../../types';
 
 const EMPTY_FORM = {
   name: '',
@@ -22,10 +22,16 @@ const EMPTY_FORM = {
   categoryId: '',
   isActive: true,
   imageUrl: '',
-  variantName: '',
-  variantPrice: '',
-  variantStock: '',
 };
+
+interface VariantAttrDraft { key: string; value: string; }
+interface VariantDraft {
+  name: string;
+  price: string;
+  stock: string;
+  attrs: VariantAttrDraft[];
+}
+const EMPTY_VARIANT: VariantDraft = { name: '', price: '', stock: '', attrs: [] };
 
 export function AdminProductsPage() {
   const queryClient = useQueryClient();
@@ -35,6 +41,7 @@ export function AdminProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [variants, setVariants] = useState<VariantDraft[]>([]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-products', page, search],
@@ -49,9 +56,35 @@ export function AdminProductsPage() {
   const set = (key: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  const updateVariant = (index: number, field: 'name' | 'price' | 'stock', value: string) =>
+    setVariants((vs) => vs.map((v, i) => (i === index ? { ...v, [field]: value } : v)));
+
+  const addVariant = () => setVariants((vs) => [...vs, { ...EMPTY_VARIANT }]);
+
+  const removeVariant = (index: number) =>
+    setVariants((vs) => vs.filter((_, i) => i !== index));
+
+  const updateVariantOption = (index: number, attrIndex: number, field: 'key' | 'value', val: string) =>
+    setVariants((vs) =>
+      vs.map((v, i) => {
+        if (i !== index) return v;
+        const attrs = v.attrs.map((a, ai) => (ai === attrIndex ? { ...a, [field]: val } : a));
+        return { ...v, attrs };
+      })
+    );
+
+  const addVariantAttribute = (index: number) =>
+    setVariants((vs) => vs.map((v, i) => (i === index ? { ...v, attrs: [...v.attrs, { key: '', value: '' }] } : v)));
+
+  const removeVariantAttribute = (index: number, attrIndex: number) =>
+    setVariants((vs) =>
+      vs.map((v, i) => (i === index ? { ...v, attrs: v.attrs.filter((_, ai) => ai !== attrIndex) } : v))
+    );
+
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setVariants([]);
     setIsModalOpen(true);
   };
 
@@ -66,10 +99,15 @@ export function AdminProductsPage() {
       categoryId: product.categoryId,
       isActive: product.isActive,
       imageUrl: product.images?.[0]?.url || '',
-      variantName: '',
-      variantPrice: '',
-      variantStock: '',
     });
+    setVariants(
+      (product.variants || []).map((v) => ({
+        name: v.name,
+        price: String(v.price),
+        stock: String(v.stock),
+        attrs: Object.entries(v.options || {}).map(([key, value]) => ({ key, value })),
+      }))
+    );
     setIsModalOpen(true);
   };
 
@@ -88,19 +126,20 @@ export function AdminProductsPage() {
       const images = form.imageUrl ? [{ url: form.imageUrl, sortOrder: 0 }] : [];
       if (images.length) payload.images = images;
 
-      const variants: Omit<Variant, 'id'>[] = [];
-      if (editing) {
-        // keep existing variants on edit
-      } else if (form.variantName && form.variantPrice) {
-        variants.push({
-          name: form.variantName,
-          sku: `${form.sku}-1`,
-          price: Number(form.variantPrice),
-          stock: Number(form.variantStock) || 0,
-          options: {},
-        });
-      }
-      if (variants.length) payload.variants = variants;
+      const payloadVariants: { name: string; sku: string; price: number; stock: number; options: Record<string, string> }[] =
+        variants
+          .filter((v) => v.name && v.price)
+          .map((v, i) => ({
+            name: v.name,
+            sku: `${form.sku}-${i + 1}`,
+            price: Number(v.price),
+            stock: Number(v.stock) || 0,
+            options: v.attrs
+              .filter((a) => a.key.trim())
+              .reduce((acc, a) => ({ ...acc, [a.key.trim()]: a.value }), {}),
+          }));
+
+      if (payloadVariants.length) payload.variants = payloadVariants;
 
       return editing ? adminApi.updateProduct(editing.id, payload) : adminApi.createProduct(payload);
     },
@@ -252,16 +291,49 @@ export function AdminProductsPage() {
             <img src={form.imageUrl} alt="Vista previa" className="h-24 w-24 object-cover rounded-lg" />
           )}
 
-          {!editing && (
-            <div className="bg-cream-100/60 rounded-xl p-4 space-y-3 border border-cream-300/50">
-              <p className="text-sm font-medium text-dark-900/70">Variante (opcional)</p>
-              <div className="grid grid-cols-3 gap-3">
-                <Input placeholder="Nombre (ej: Rojo)" value={form.variantName} onChange={set('variantName')} />
-                <Input type="number" placeholder="Precio" value={form.variantPrice} onChange={set('variantPrice')} />
-                <Input type="number" placeholder="Stock" value={form.variantStock} onChange={set('variantStock')} />
-              </div>
+          <div className="bg-cream-100/60 rounded-xl p-4 space-y-4 border border-cream-300/50">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-dark-900/70">Variantes (opcional)</p>
+              <Button size="sm" variant="outline" onClick={addVariant}>+ Añadir variante</Button>
             </div>
-          )}
+
+            {variants.length === 0 ? (
+              <p className="text-xs text-dark-900/50">Sin variantes. Añade tallas, colores, etc.</p>
+            ) : (
+              variants.map((v, i) => (
+                <div key={i} className="bg-white/70 border border-cream-300/60 rounded-xl p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-dark-900/60">Variante {i + 1}</p>
+                    <Button size="sm" variant="ghost" className="text-red-500" onClick={() => removeVariant(i)}>
+                      Eliminar
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <Input placeholder="Nombre (ej: Rojo / M)" value={v.name} onChange={(e) => updateVariant(i, 'name', e.target.value)} />
+                    <Input type="number" placeholder="Precio" value={v.price} onChange={(e) => updateVariant(i, 'price', e.target.value)} />
+                    <Input type="number" placeholder="Stock" value={v.stock} onChange={(e) => updateVariant(i, 'stock', e.target.value)} />
+                  </div>
+
+                  <div className="space-y-2">
+                    {v.attrs.map((attr, ai) => (
+                      <div key={ai} className="flex items-center gap-2">
+                        <Input placeholder="Atributo (ej: talla)" value={attr.key} className="flex-1"
+                          onChange={(e) => updateVariantOption(i, ai, 'key', e.target.value)} />
+                        <Input placeholder="Valor (ej: M)" value={attr.value} className="flex-1"
+                          onChange={(e) => updateVariantOption(i, ai, 'value', e.target.value)} />
+                        <Button size="sm" variant="ghost" className="text-red-500 flex-shrink-0" onClick={() => removeVariantAttribute(i, ai)}>
+                          ✕
+                        </Button>
+                      </div>
+                    ))}
+                    <Button size="sm" variant="ghost" onClick={() => addVariantAttribute(i)}>
+                      + Atributo
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
           <div className="flex items-center gap-3">
             <input

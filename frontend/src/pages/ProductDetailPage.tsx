@@ -15,6 +15,7 @@ export function ProductDetailPage() {
   const { data: product, isLoading, error } = useProduct(slug || '');
   const { addItem, isAdding } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
 
   if (isLoading) return <Loading message="Cargando producto..." />;
   if (error || !product) {
@@ -25,6 +26,12 @@ export function ProductDetailPage() {
     );
   }
 
+  const variants = product.variants || [];
+  const selectedVariant = variants.find((v) => v.id === selectedVariantId) || null;
+
+  const displayPrice = selectedVariant ? selectedVariant.price : product.price;
+  const displayStock = selectedVariant ? selectedVariant.stock : product.stock;
+
   const discount = product.compareAtPrice
     ? Math.round((1 - product.price / product.compareAtPrice) * 100)
     : 0;
@@ -34,7 +41,7 @@ export function ProductDetailPage() {
     : 0;
 
   const handleAddToCart = () => {
-    addItem({ productId: product.id, quantity });
+    addItem({ productId: product.id, variantId: selectedVariantId || undefined, quantity });
   };
 
   return (
@@ -61,8 +68,8 @@ export function ProductDetailPage() {
 
           <div className="mb-6">
             <div className="flex items-center gap-4">
-              <span className="text-4xl font-bold text-gradient">{formatPrice(product.price)}</span>
-              {product.compareAtPrice && (
+              <span className="text-4xl font-bold text-gradient">{formatPrice(displayPrice)}</span>
+              {product.compareAtPrice && !selectedVariant && (
                 <>
                   <span className="text-xl text-dark-900/40 line-through">{formatPrice(product.compareAtPrice)}</span>
                   <Badge variant="success">-{discount}%</Badge>
@@ -74,22 +81,59 @@ export function ProductDetailPage() {
           <p className="text-dark-900/70 mb-8 text-lg leading-relaxed">{product.description}</p>
 
           <div className="mb-8">
-            <p className="text-sm text-dark-900/50 mb-2">SKU: {product.sku}</p>
+            <p className="text-sm text-dark-900/50 mb-2">SKU: {selectedVariant?.sku || product.sku}</p>
             <p className="text-sm">
-              {product.stock > 0 ? (
-                <span className="text-neon-green">En stock ({product.stock} disponibles)</span>
+              {displayStock > 0 ? (
+                <span className="text-neon-green">En stock ({displayStock} disponibles)</span>
               ) : (
                 <span className="text-red-500">Agotado</span>
               )}
             </p>
           </div>
 
+          {variants.length > 0 && (
+            <div className="mb-8">
+              <p className="text-sm text-dark-900/50 mb-2">Elige una opción:</p>
+              <div className="flex flex-wrap gap-3">
+                {variants.map((v) => {
+                  const attrLabel = Object.entries(v.options || {})
+                    .map(([, val]) => val)
+                    .filter(Boolean)
+                    .join(' · ');
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedVariantId(v.id);
+                        setQuantity(1);
+                      }}
+                      disabled={v.stock === 0}
+                      className={`px-4 py-3 rounded-xl border text-left transition-colors ${
+                        selectedVariantId === v.id
+                          ? 'border-neon-cyan bg-neon-cyan/10 text-dark-900'
+                          : 'border-cream-300 hover:border-neon-cyan/60'
+                      } ${v.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <span className="block text-sm font-medium">{v.name}</span>
+                      {attrLabel && <span className="block text-xs text-dark-900/50">{attrLabel}</span>}
+                      <span className="block text-sm font-semibold text-neon-cyan mt-1">
+                        {formatPrice(v.price)}
+                        {v.stock === 0 && <span className="text-red-500"> · Agotado</span>}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-4">
             <div className="w-32">
               <Input
                 type="number"
                 min={1}
-                max={product.stock}
+                max={Math.max(displayStock, 1)}
                 value={quantity}
                 onChange={(e) => setQuantity(Number(e.target.value))}
               />
@@ -100,9 +144,9 @@ export function ProductDetailPage() {
               className="flex-1"
               onClick={handleAddToCart}
               isLoading={isAdding}
-              disabled={product.stock === 0}
+              disabled={displayStock === 0 || (variants.length > 0 && !selectedVariant)}
             >
-              {product.stock === 0 ? 'Agotado' : 'Agregar al carrito'}
+              {displayStock === 0 ? 'Agotado' : variants.length > 0 && !selectedVariant ? 'Selecciona una opción' : 'Agregar al carrito'}
             </Button>
           </div>
         </div>

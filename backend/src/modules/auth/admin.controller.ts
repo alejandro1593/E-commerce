@@ -3,6 +3,7 @@ import { AuthRequest } from '../../shared/types';
 import { ApiResponse } from '../../shared/utils/apiResponse';
 import { ApiError } from '../../shared/utils/ApiError';
 import prisma from '../../config/database';
+import { restockOrderItems } from '../orders/orders.service';
 
 export async function getDashboard(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -86,11 +87,25 @@ export async function getAllOrders(req: any, res: Response, next: NextFunction) 
 export async function updateOrderStatus(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { status } = req.body;
-    const order = await prisma.order.update({
-      where: { id: req.params.id },
-      data: { status },
-      include: { items: true },
+
+    const order = await prisma.$transaction(async (tx) => {
+      if (status === 'CANCELLED') {
+        const current = await tx.order.findUnique({
+          where: { id: req.params.id },
+          select: { status: true },
+        });
+        if (current && current.status !== 'CANCELLED') {
+          await restockOrderItems(tx, req.params.id);
+        }
+      }
+
+      return tx.order.update({
+        where: { id: req.params.id },
+        data: { status },
+        include: { items: true },
+      });
     });
+
     return ApiResponse.success(res, order, 'Order status updated');
   } catch (error) {
     next(error);

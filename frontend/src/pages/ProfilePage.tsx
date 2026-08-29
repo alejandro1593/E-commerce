@@ -126,6 +126,7 @@ function AddressesTab() {
   const addToast = useUIStore((s) => s.addToast);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ street: '', city: '', state: '', zipCode: '', isDefault: false });
 
@@ -140,25 +141,40 @@ function AddressesTab() {
 
   useEffect(() => { loadAddresses(); }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const resetForm = () => {
+    setFormData({ street: '', city: '', state: '', zipCode: '', isDefault: false });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await usersApi.createAddress({ ...formData });
-      setShowForm(false);
-      setFormData({ street: '', city: '', state: '', zipCode: '', isDefault: false });
+      if (editingId) {
+        await usersApi.updateAddress(editingId, { ...formData });
+      } else {
+        await usersApi.createAddress({ ...formData });
+      }
+      resetForm();
       await loadAddresses();
-      addToast({ message: 'Dirección agregada', type: 'success' });
+      addToast({ message: editingId ? 'Dirección actualizada' : 'Dirección agregada', type: 'success' });
     } catch (error: any) {
-      addToast({ message: error.response?.data?.message || 'Error al agregar dirección', type: 'error' });
+      addToast({ message: error.response?.data?.message || 'Error al guardar dirección', type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleEdit = (addr: Address) => {
+    setFormData({ street: addr.street, city: addr.city, state: addr.state, zipCode: addr.zipCode, isDefault: addr.isDefault });
+    setEditingId(addr.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (addr: Address) => {
     try {
-      await usersApi.deleteAddress(id);
+      await usersApi.deleteAddress(addr.id);
       await loadAddresses();
       addToast({ message: 'Dirección eliminada', type: 'success' });
     } catch (error: any) {
@@ -171,14 +187,15 @@ function AddressesTab() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-dark-900">Mis direcciones</h2>
-          <Button variant="neon" size="sm" onClick={() => setShowForm(!showForm)}>
+          <Button variant="neon" size="sm" onClick={() => (showForm && editingId ? resetForm() : setShowForm(!showForm))}>
             {showForm ? 'Cancelar' : 'Agregar dirección'}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         {showForm && (
-          <form onSubmit={handleCreate} className="space-y-4 mb-6 border-b border-cream-300/60 pb-6">
+          <form onSubmit={handleSubmit} className="space-y-4 mb-6 border-b border-cream-300/60 pb-6">
+            <h3 className="font-medium text-dark-900">{editingId ? 'Editar dirección' : 'Nueva dirección'}</h3>
             <Input label="Dirección" name="street" placeholder="Calle y número" value={formData.street} onChange={(e) => setFormData({ ...formData, street: e.target.value })} required />
             <div className="grid grid-cols-3 gap-4">
               <Input label="Ciudad" name="city" placeholder="Ciudad" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} required />
@@ -194,7 +211,7 @@ function AddressesTab() {
               />
               Usar como dirección predeterminada
             </label>
-            <Button type="submit" isLoading={isLoading}>Guardar dirección</Button>
+            <Button type="submit" isLoading={isLoading}>{editingId ? 'Guardar cambios' : 'Guardar dirección'}</Button>
           </form>
         )}
 
@@ -203,19 +220,24 @@ function AddressesTab() {
         ) : (
           <div className="space-y-3">
             {addresses.map((addr) => (
-              <div key={(addr as any).id} className="border border-cream-300/60 rounded-xl p-4 flex items-start justify-between">
+              <div key={addr.id} className="border border-cream-300/60 rounded-xl p-4 flex items-start justify-between">
                 <div>
                   <p className="font-medium text-dark-900">{addr.street}</p>
                   <p className="text-sm text-dark-900/60">
                     {addr.zipCode}, {addr.city}, {addr.state} — {addr.country}
                   </p>
-                  {(addr as any).isDefault && (
+                  {addr.isDefault && (
                     <span className="inline-block mt-1 text-xs text-neon-cyan font-medium">Predeterminada</span>
                   )}
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete((addr as any).id)} className="text-red-500">
-                  Eliminar
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(addr)}>
+                    Editar
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(addr)} className="text-red-500">
+                    Eliminar
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

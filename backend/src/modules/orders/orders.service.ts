@@ -2,6 +2,23 @@ import prisma from '../../config/database';
 import { paginate } from '../../shared/utils/paginate';
 import { ApiError } from '../../shared/utils/ApiError';
 
+export async function restockOrderItems(tx: any, orderId: string) {
+  const items = await tx.orderItem.findMany({ where: { orderId } });
+  for (const item of items) {
+    if (item.variantId) {
+      await tx.variant.update({
+        where: { id: item.variantId },
+        data: { stock: { increment: item.quantity } },
+      });
+    } else {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { increment: item.quantity } },
+      });
+    }
+  }
+}
+
 export async function createOrder(userId: string, data: {
   shippingAddress: any;
   paymentIntentId?: string;
@@ -82,7 +99,7 @@ export async function createOrder(userId: string, data: {
         shippingAddress: data.shippingAddress,
         paymentIntentId: data.paymentIntentId,
         couponId: cart.couponId,
-        status: 'CONFIRMED',
+        status: 'PENDING',
         items: { create: orderItems },
       },
       include: {
@@ -161,19 +178,7 @@ export async function cancelOrder(userId: string, orderId: string) {
   }
 
   return prisma.$transaction(async (tx) => {
-    for (const item of order.items) {
-      if (item.variantId) {
-        await tx.variant.update({
-          where: { id: item.variantId },
-          data: { stock: { increment: item.quantity } },
-        });
-      } else {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity } },
-        });
-      }
-    }
+    await restockOrderItems(tx, orderId);
 
     return tx.order.update({
       where: { id: orderId },

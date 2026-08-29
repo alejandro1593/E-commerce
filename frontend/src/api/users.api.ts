@@ -18,6 +18,15 @@ export const usersApi = {
     isDefault?: boolean;
   }) => api.post<{ data: Address }>('/users/me/addresses', data).then((r) => r.data.data),
 
+  updateAddress: (id: string, data: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+    isDefault?: boolean;
+  }) => api.put<{ data: Address }>(`/users/me/addresses/${id}`, data).then((r) => r.data.data),
+
   deleteAddress: (id: string) => api.delete(`/users/me/addresses/${id}`),
 
   changePassword: (currentPassword: string, newPassword: string) =>

@@ -2,6 +2,7 @@ import stripe from '../../config/stripe';
 import prisma from '../../config/database';
 import { ApiError } from '../../shared/utils/ApiError';
 import { env } from '../../config/env';
+import { sendEmail, orderConfirmationEmail } from '../../shared/utils/email';
 
 const IS_PLACEHOLDER =
   env.STRIPE_SECRET_KEY.includes('placeholder') ||
@@ -55,10 +56,22 @@ export async function confirmPayment(userId: string, paymentIntentId: string) {
   // Modo de prueba: cualquier PaymentIntent mock se confirma
   if (paymentIntentId.startsWith('pi_mock_')) {
     const orderId = paymentIntentId.replace('pi_mock_', '');
-    await prisma.order.updateMany({
+
+    const existing = await prisma.order.findFirst({
       where: { id: orderId, userId },
-      data: { status: 'CONFIRMED' },
+      select: { status: true },
     });
+
+    if (existing && existing.status === 'PENDING') {
+      const order = await prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'CONFIRMED' },
+        include: { user: true },
+      });
+      const emailContent = orderConfirmationEmail(order.id, order.total);
+      await sendEmail({ to: order.user.email, ...emailContent });
+    }
+
     return { status: 'succeeded', paymentIntentId, mode: 'test' as const };
   }
 

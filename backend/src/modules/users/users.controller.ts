@@ -39,6 +39,15 @@ export async function createAddress(req: AuthRequest, res: Response, next: NextF
   }
 }
 
+export async function updateAddress(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const address = await usersService.updateAddress(req.user!.id, req.params.id, req.body);
+    return ApiResponse.success(res, address, 'Address updated successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function deleteAddress(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     await usersService.deleteAddress(req.user!.id, req.params.id);

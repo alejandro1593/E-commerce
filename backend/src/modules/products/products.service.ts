@@ -126,10 +126,19 @@ export async function updateProduct(id: string, data: any) {
     productData.slug = slugify(productData.name);
   }
 
-  const product = await prisma.product.update({
-    where: { id },
-    data: productData,
-    include: productInclude,
+  const product = await prisma.$transaction(async (tx) => {
+    if (variants) {
+      await tx.variant.deleteMany({ where: { productId: id } });
+    }
+
+    return tx.product.update({
+      where: { id },
+      data: {
+        ...productData,
+        ...(variants ? { variants: { create: variants } } : {}),
+      },
+      include: productInclude,
+    });
   });
 
   return product;

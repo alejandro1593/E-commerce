@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import stripe from '../../config/stripe';
 import prisma from '../../config/database';
 import { sendEmail, orderConfirmationEmail } from '../../shared/utils/email';
+import { restockOrderItems } from '../orders/orders.service';
 
 export async function handleStripeWebhook(req: Request, res: Response) {
   const sig = req.headers['stripe-signature'] as string;
@@ -24,6 +25,15 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       const orderId = paymentIntent.metadata.orderId;
 
       if (orderId) {
+        const existing = await prisma.order.findUnique({
+          where: { id: orderId },
+          select: { status: true },
+        });
+
+        if (!existing || existing.status === 'CONFIRMED') {
+          break;
+        }
+
         const order = await prisma.order.update({
           where: { id: orderId },
           data: { status: 'CONFIRMED' },
@@ -41,9 +51,21 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       const orderId = paymentIntent.metadata.orderId;
 
       if (orderId) {
-        await prisma.order.update({
+        const existing = await prisma.order.findUnique({
           where: { id: orderId },
-          data: { status: 'CANCELLED' },
+          select: { status: true },
+        });
+
+        if (!existing || existing.status !== 'PENDING') {
+          break;
+        }
+
+        await prisma.$transaction(async (tx) => {
+          await restockOrderItems(tx, orderId);
+          await tx.order.update({
+            where: { id: orderId },
+            data: { status: 'CANCELLED' },
+          });
         });
       }
       break;
