@@ -17,6 +17,7 @@ import reviewsRoutes from './modules/reviews/reviews.routes';
 import couponsRoutes from './modules/coupons/coupons.routes';
 import webhooksRoutes from './modules/webhooks/webhooks.routes';
 import { uploadsRouter } from './modules/uploads/uploads.routes';
+import wishlistRoutes from './modules/wishlist/wishlist.routes';
 
 import { adminProductsRouter } from './modules/products/products.routes';
 import { adminCategoriesRouter } from './modules/categories/categories.routes';
@@ -47,6 +48,7 @@ app.use('/api/v1/products', productsRoutes);
 app.use('/api/v1/products/:productId/reviews', reviewsRoutes);
 app.use('/api/v1/categories', categoriesRoutes);
 app.use('/api/v1/cart', cartRoutes);
+app.use('/api/v1/wishlist', wishlistRoutes);
 app.use('/api/v1/orders', ordersRoutes);
 app.use('/api/v1/payments', paymentsRoutes);
 
@@ -56,6 +58,7 @@ app.use('/api/v1/admin/coupons', couponsRoutes);
 app.use('/api/v1/uploads', authenticate, authorize('ADMIN'), uploadsRouter);
 
 app.get('/api/v1/admin/dashboard', authenticate, authorize('ADMIN'), adminController.getDashboard);
+app.get('/api/v1/admin/export/:type', authenticate, authorize('ADMIN'), adminController.exportCsv);
 app.get('/api/v1/admin/orders', authenticate, authorize('ADMIN'), adminController.getAllOrders);
 app.put('/api/v1/admin/orders/:id/status', authenticate, authorize('ADMIN'), adminController.updateOrderStatus);
 app.get('/api/v1/admin/users', authenticate, authorize('ADMIN'), adminController.getAllUsers);

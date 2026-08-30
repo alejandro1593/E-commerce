@@ -21,6 +21,9 @@ export const productsApi = {
   getFeatured: () =>
     api.get<{ data: Product[] }>('/products/featured').then((r) => r.data.data),
 
+  getRelated: (slug: string, limit = 4) =>
+    api.get<{ data: Product[] }>('/products/related', { params: { slug, limit } }).then((r) => r.data.data),
+
   getReviews: (productId: string, page = 1, limit = 10) =>
     api.get(`/products/${productId}/reviews`, { params: { page, limit } }).then((r) => r.data),
 

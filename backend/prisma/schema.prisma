@@ -44,6 +44,7 @@ model User {
   reviews   Review[]
   addresses Address[]
   cart      Cart?
+  wishlist  WishlistItem[]
 
   @@map("users")
 }
@@ -88,6 +89,7 @@ model Product {
   reviews     Review[]
   orderItems  OrderItem[]
   cartItems   CartItem[]
+  wishlist    WishlistItem[]
 
   @@map("products")
 }
@@ -101,6 +103,19 @@ model ProductImage {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_images")
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlist_items")
 }
 
 model Variant {

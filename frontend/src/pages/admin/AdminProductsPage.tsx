@@ -10,6 +10,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Loading } from '../../components/ui/Loading';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useUIStore } from '../../store/uiStore';
+import { downloadCsv } from '../../lib/csv';
 import { formatPrice } from '../../lib/utils';
 import { buildCategorySelectOptions, categoryLabelByDepth } from '../../lib/categories';
 import { Product } from '../../types';
@@ -44,6 +45,19 @@ export function AdminProductsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      await downloadCsv('products');
+      addToast({ message: 'Productos exportados', type: 'success' });
+    } catch (error: any) {
+      addToast({ message: error?.message || 'Error al exportar', type: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-products', page, search],
@@ -195,6 +209,12 @@ export function AdminProductsPage() {
           <h1 className="text-2xl font-bold text-dark-900">Productos</h1>
           <p className="text-dark-900/60">Administra el catálogo de productos</p>
         </div>
+        <Button variant="outline" onClick={handleExport} isLoading={exporting}>
+          <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Exportar CSV
+        </Button>
         <Button variant="neon" onClick={openCreate}>+ Nuevo producto</Button>
       </div>
 

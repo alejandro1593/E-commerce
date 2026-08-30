@@ -120,6 +120,22 @@ export async function getFeaturedProducts() {
   });
 }
 
+export async function getRelatedProducts(slug: string, take = 4) {
+  const product = await prisma.product.findUnique({ where: { slug } });
+  if (!product) return [];
+
+  return prisma.product.findMany({
+    where: {
+      isActive: true,
+      categoryId: product.categoryId,
+      id: { not: product.id },
+    },
+    include: productInclude,
+    orderBy: { createdAt: 'desc' },
+    take,
+  });
+}
+
 export async function getProductById(id: string) {
   const product = await prisma.product.findUnique({
     where: { id },

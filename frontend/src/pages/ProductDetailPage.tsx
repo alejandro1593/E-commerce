@@ -6,14 +6,20 @@ import { Input } from '../components/ui/Input';
 import { Loading } from '../components/ui/Loading';
 import { ImageGallery } from '../components/products/ImageGallery';
 import { ReviewsSection } from '../components/products/ReviewsSection';
-import { useProduct } from '../hooks/useProducts';
+import { useProduct, useRelatedProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
+import { useWishlist } from '../hooks/useWishlist';
+import { useAuthStore } from '../store/authStore';
 import { formatPrice } from '../lib/utils';
+import { ProductCard } from '../components/products/ProductCard';
 
 export function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { data: product, isLoading, error } = useProduct(slug || '');
   const { addItem, isAdding } = useCart();
+  const { isFavorite, toggle, isToggling } = useWishlist();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { data: relatedProducts } = useRelatedProducts(slug || '', !!slug);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
 
@@ -128,31 +134,59 @@ export function ProductDetailPage() {
             </div>
           )}
 
-          <div className="flex items-center gap-4">
-            <div className="w-32">
-              <Input
-                type="number"
-                min={1}
-                max={Math.max(displayStock, 1)}
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-              />
+            <div className="flex items-center gap-4">
+              <div className="w-32">
+                <Input
+                  type="number"
+                  min={1}
+                  max={Math.max(displayStock, 1)}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Number(e.target.value))}
+                />
+              </div>
+              <Button
+                size="lg"
+                variant="neon"
+                className="flex-1"
+                onClick={handleAddToCart}
+                isLoading={isAdding}
+                disabled={displayStock === 0 || (variants.length > 0 && !selectedVariant)}
+              >
+                {displayStock === 0 ? 'Agotado' : variants.length > 0 && !selectedVariant ? 'Selecciona una opción' : 'Agregar al carrito'}
+              </Button>
+              {isAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => toggle(product.id)}
+                  disabled={isToggling}
+                  title={isFavorite(product.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                  className={`w-14 h-14 shrink-0 rounded-xl border flex items-center justify-center transition-colors disabled:opacity-50 ${
+                    isFavorite(product.id)
+                      ? 'bg-red-500 border-red-500 text-white'
+                      : 'border-cream-300 text-dark-900/50 hover:border-red-400 hover:text-red-500'
+                  }`}
+                >
+                  <svg className="h-6 w-6" fill={isFavorite(product.id) ? 'currentColor' : 'none'} viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                  </svg>
+                </button>
+              )}
             </div>
-            <Button
-              size="lg"
-              variant="neon"
-              className="flex-1"
-              onClick={handleAddToCart}
-              isLoading={isAdding}
-              disabled={displayStock === 0 || (variants.length > 0 && !selectedVariant)}
-            >
-              {displayStock === 0 ? 'Agotado' : variants.length > 0 && !selectedVariant ? 'Selecciona una opción' : 'Agregar al carrito'}
-            </Button>
-          </div>
         </div>
       </div>
 
       <ReviewsSection productId={product.id} />
+
+      {relatedProducts && relatedProducts.length > 0 && (
+        <section className="mt-16">
+          <h2 className="text-2xl font-bold text-dark-900 mb-6">Quizá también te guste</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {relatedProducts.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

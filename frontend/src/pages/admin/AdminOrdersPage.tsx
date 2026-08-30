@@ -7,6 +7,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Loading } from '../../components/ui/Loading';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useUIStore } from '../../store/uiStore';
+import { downloadCsv } from '../../lib/csv';
 import { formatPrice, formatDateTime, truncate } from '../../lib/utils';
 import { ORDER_STATUS_LABELS, ORDER_STATUS } from '../../lib/constants';
 
@@ -24,6 +25,19 @@ const ALL_STATUSES = Object.values(ORDER_STATUS);
 export function AdminOrdersPage() {
   const queryClient = useQueryClient();
   const addToast = useUIStore((s) => s.addToast);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      await downloadCsv('orders');
+      addToast({ message: 'Órdenes exportadas', type: 'success' });
+    } catch (error: any) {
+      addToast({ message: error?.message || 'Error al exportar', type: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  };
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState('');
 
@@ -50,9 +64,17 @@ export function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-dark-900">Órdenes</h1>
-        <p className="text-dark-900/60">Administra todas las órdenes de la tienda</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-dark-900">Órdenes</h1>
+          <p className="text-dark-900/60">Administra todas las órdenes de la tienda</p>
+        </div>
+        <Button size="sm" variant="secondary" onClick={handleExport} isLoading={exporting}>
+          <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Exportar CSV
+        </Button>
       </div>
 
       <div className="flex gap-2 flex-wrap">

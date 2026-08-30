@@ -25,6 +25,15 @@ export function useFeaturedProducts() {
   });
 }
 
+export function useRelatedProducts(slug: string, enabled = true) {
+  return useQuery({
+    queryKey: ['products', 'related', slug],
+    queryFn: () => productsApi.getRelated(slug, 4),
+    enabled: !!slug && enabled,
+    staleTime: 120000,
+  });
+}
+
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],

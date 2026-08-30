@@ -30,6 +30,17 @@ export async function getFeaturedProducts(req: any, res: Response, next: NextFun
   }
 }
 
+export async function getRelatedProducts(req: any, res: Response, next: NextFunction) {
+  try {
+    const slug = req.query.slug as string;
+    const take = parseInt(req.query.limit as string) || 4;
+    const products = await productsService.getRelatedProducts(slug, take);
+    return ApiResponse.success(res, products);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function createProduct(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const product = await productsService.createProduct(req.body);

@@ -16,6 +16,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { OrdersPage } from './pages/OrdersPage';
+import { WishlistPage } from './pages/WishlistPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { CreateProductPage } from './pages/CreateProductPage';
 import { AdminLayout } from './components/admin/AdminLayout';
@@ -55,6 +56,7 @@ function App() {
               <Route path="/orden-exitosa" element={<OrderSuccessPage />} />
               <Route path="/perfil" element={<ProfilePage />} />
               <Route path="/mis-ordenes" element={<OrdersPage />} />
+              <Route path="/mis-favoritos" element={<WishlistPage />} />
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<DashboardPage />} />
                 <Route path="productos" element={<AdminProductsPage />} />

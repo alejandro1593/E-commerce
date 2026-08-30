@@ -10,6 +10,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Loading } from '../../components/ui/Loading';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useUIStore } from '../../store/uiStore';
+import { downloadCsv } from '../../lib/csv';
 import { formatDate } from '../../lib/utils';
 import { AdminUser } from '../../api/admin.api';
 
@@ -17,6 +18,19 @@ export function AdminUsersPage() {
   const queryClient = useQueryClient();
   const addToast = useUIStore((s) => s.addToast);
   const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      await downloadCsv('users');
+      addToast({ message: 'Usuarios exportados', type: 'success' });
+    } catch (error: any) {
+      addToast({ message: error?.message || 'Error al exportar', type: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,9 +86,17 @@ export function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-dark-900">Usuarios</h1>
-        <p className="text-dark-900/60">Administra las cuentas de los usuarios registrados</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-dark-900">Usuarios</h1>
+          <p className="text-dark-900/60">Administra las cuentas de los usuarios registrados</p>
+        </div>
+        <Button size="sm" variant="secondary" onClick={handleExport} isLoading={exporting}>
+          <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Exportar CSV
+        </Button>
       </div>
 
       <Card>

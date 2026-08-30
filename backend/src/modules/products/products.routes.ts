@@ -10,6 +10,7 @@ const router = Router();
 
 router.get('/', validate(productFilterSchema, 'query'), productsController.listProducts);
 router.get('/featured', productsController.getFeaturedProducts);
+router.get('/related', productsController.getRelatedProducts);
 router.get('/:slug', validate(slugParamSchema, 'params'), productsController.getProductBySlug);
 
 export const adminProductsRouter = Router();

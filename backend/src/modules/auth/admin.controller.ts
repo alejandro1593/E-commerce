@@ -106,6 +106,99 @@ export async function getDashboard(req: AuthRequest, res: Response, next: NextFu
   }
 }
 
+export async function exportCsv(req: any, res: Response, next: NextFunction) {
+  try {
+    const type = req.params.type as string;
+    const rows: Record<string, string | number | boolean | null>[] = [];
+
+    if (type === 'orders') {
+      const orders = await prisma.order.findMany({
+        include: { user: { select: { name: true, email: true } }, items: { include: { product: { select: { name: true, sku: true } } } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      for (const o of orders) {
+        rows.push({
+          id: o.id,
+          usuario: o.user?.name || '',
+          email: o.user?.email || '',
+          estado: o.status,
+          subtotal: Number(o.subtotal),
+          impuesto: Number(o.tax),
+          envio: Number(o.shipping),
+          descuento: Number(o.discount),
+          total: Number(o.total),
+          fecha: o.createdAt.toISOString(),
+        });
+        for (const item of o.items) {
+          rows.push({
+            id: `${o.id}-item`,
+            usuario: '',
+            email: '',
+            estado: '',
+            subtotal: '',
+            impuesto: '',
+            envio: '',
+            descuento: '',
+            total: '',
+            fecha: '',
+            producto: item.product?.name || '',
+            sku: item.product?.sku || '',
+            cantidad: item.quantity,
+            precio_unitario: Number(item.unitPrice),
+          });
+        }
+      }
+    } else if (type === 'products') {
+      const products = await prisma.product.findMany({
+        include: { category: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      for (const p of products) {
+        rows.push({
+          id: p.id,
+          nombre: p.name,
+          sku: p.sku,
+          categoria: p.category?.name || '',
+          precio: Number(p.price),
+          stock: p.stock,
+          activo: p.isActive,
+          creado: p.createdAt.toISOString(),
+        });
+      }
+    } else if (type === 'users') {
+      const users = await prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
+      for (const u of users) {
+        rows.push({
+          id: u.id,
+          nombre: u.name,
+          email: u.email,
+          rol: u.role,
+          activo: u.isActive,
+          creado: u.createdAt.toISOString(),
+        });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: 'Tipo de export no válido' });
+    }
+
+    const headers = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+    const escape = (v: any) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [
+      headers.join(','),
+      ...rows.map((r) => headers.map((h) => escape(r[h])).join(',')),
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.csv"`);
+    return res.send(csv);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getAllOrders(req: any, res: Response, next: NextFunction) {
   try {
     const page = parseInt(req.query.page as string) || 1;
