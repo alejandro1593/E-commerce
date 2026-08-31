@@ -1,0 +1,59 @@
+PROPUESTAS DE IMPLEMENTACION PENDIENTES - E-COMMERCE
+====================================================
+
+Estado:
+- Implementadas: Lista de deseos (favoritos), Productos relacionados, Exportar CSV en admin
+- Pendientes: las que se listan a continuacion
+
+
+A) ALTO VALOR / BAJO ESFUERZO
+-----------------------------
+1. Verificacion de email
+   - Enviar codigo o token al registrarse y validarlo antes de activar la cuenta.
+   - Aumenta la confianza y evita cuentas falsas.
+
+2. Newsletter / Suscripcion de emails
+   - Capturar emails de visitantes para enviar promociones.
+   - Buena para el crecimiento de la tienda (opcional: campanas).
+
+
+B) VALOR ALTO / ESFUERZO MEDIO
+------------------------------
+3. Email de seguimiento de envio
+   - Cuando el admin cambia el estado a "Enviado", generar numero de rastreo/guia
+     y notificar al usuario por email con el link de seguimiento.
+
+4. Notificaciones de stock bajo
+   - Email automatico al admin cuando un producto baja de X unidades.
+
+5. Audit log de administracion
+   - Registrar quien y cuando creo/borro un producto, cambio un rol, etc.
+   - Suele ser requerido para operaciones reales.
+
+6. Mejoras SEO
+   - Meta tags por producto (react-helmet), sitemap.xml,
+     datos estructurados de producto (schema.org).
+
+7. Login con Google (OAuth)
+
+
+C) GRANDES / ESTRATEGICOS
+-------------------------
+8. Testing automatizado (Jest + Supertest)
+   - Actualmente no hay ningun test; es lo que mas profesionaliza el proyecto.
+
+9. CI/CD (GitHub Actions)
+   - Correr typecheck + tests + build en cada push.
+
+10. Logging estructurado + monitoreo (Pino / Sentry)
+
+11. Checkout invitado
+    - Permitir comprar sin necesidad de crear una cuenta.
+
+
+EXTRA
+-----
+12. Activar Cloudinary
+    - Agregar las claves CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET
+      en el archivo backend/.env para habilitar la subida de imagenes
+      (el codigo ya esta integrado).

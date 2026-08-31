@@ -372,15 +372,24 @@ ecommerce/
                       │ expiresAt       │
                       └────────┬────────┘
                                │
-                      ┌────────▼────────┐
-                      │   CART_ITEM     │
-                      ├─────────────────┤
-                      │ id              │
-                      │ cartId──FK      │
-                      │ productId──FK   │
-                      │ variantId──FK   │
-                      │ quantity        │
-                      └─────────────────┘
+                       ┌────────▼────────┐
+                       │   CART_ITEM     │
+                       ├─────────────────┤
+                       │ id              │
+                       │ cartId──FK      │
+                       │ productId──FK   │
+                       │ variantId──FK   │
+                       │ quantity        │
+                       └─────────────────┘
+
+┌─────────────────┐
+│  WISHLIST_ITEM  │
+├─────────────────┤
+│ id              │
+│ userId──FK      │
+│ productId──FK   │
+│ createdAt       │
+└─────────────────┘
 
 RELACIONES CLAVE:
 ─────────────────
@@ -388,11 +397,13 @@ RELACIONES CLAVE:
   User  ──1:N──  Review
   User  ──1:N──  Address
   User  ──1:1──  Cart
+  User  ──1:N──  WishlistItem
   Product ──1:N── OrderItem
   Product ──1:N── Variant
   Product ──1:N── ProductImage
   Product ──N:1── Category
   Product ──1:N── Review
+  Product ──1:N── WishlistItem
   Order  ──1:N── OrderItem
   Order  ──N:1── Coupon (opcional)
   Cart   ──1:N── CartItem
@@ -425,6 +436,7 @@ PRODUCTS (públicos):
                                 &minPrice=10&maxPrice=100&search=keyword
   GET    /products/:slug       → Detalle de producto
   GET    /products/featured    → Productos destacados
+  GET    /products/related     → Productos relacionados (?slug=, misma categoría)
 
 CATEGORIES (públicas):
   GET    /categories           → Árbol de categorías
@@ -440,6 +452,13 @@ CART:
   PUT    /cart/items/:id       → Actualizar cantidad
   DELETE /cart/items/:id       → Eliminar item del carrito
   DELETE /cart                 → Vaciar carrito
+
+WISHLIST:
+  GET    /wishlist             → Listar favoritos del usuario
+  POST   /wishlist/:id         → Toggle favorito (agrega/elimina)
+
+UPLOADS (admin):
+  POST   /uploads/images       → Subir imagen a Cloudinary (multipart)
 
 COUPONS:
   POST   /cart/coupon          → Aplicar cupón al carrito
@@ -457,7 +476,9 @@ PAYMENTS:
   POST   /webhooks/stripe        → Webhook de Stripe (sin auth)
 
 ADMIN (/admin):
-  GET    /admin/dashboard       → Estadísticas (ventas, usuarios, pedidos)
+  GET    /admin/dashboard       → Estadísticas (ventas, usuarios, pedidos,
+                                  top productos, stock bajo, ventas por día)
+  GET    /admin/export/:type    → Exportar CSV (orders | products | users)
   GET    /admin/products        → CRUD productos
   POST   /admin/products
   PUT    /admin/products/:id
@@ -587,7 +608,15 @@ FASE 3 - FEATURES (Semana 5-6)
   □ Búsqueda full-text
   □ Gestión de variantes (talla, color)
   □ Paginación infinita
-  □ Filtros avanzados
+  □ Filtros avanzados (categoría, precio, búsqueda, orden)
+
+FASE 3.5 - FEATURES ADICIONALES (implementadas)
+────────────────────────────────────────────────
+  ✓ Wishlist / Lista de deseos (favoritos)
+  ✓ Productos relacionados (misma categoría)
+  ✓ Exportar CSV en admin (órdenes, productos, usuarios)
+  ✓ Subida de imágenes a Cloudinary
+  ✓ Reportes de dashboard (top productos, stock bajo, ventas por día)
 
 FASE 4 - ADMIN (Semana 7-8)
 ────────────────────────────
@@ -612,7 +641,7 @@ FASE 5 - POLISH Y DEPLOY (Semana 9-10)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   # Iniciar solo infraestructura
-  docker compose -f docker-compose.dev.yml up -d postgres redis
+  docker compose -f docker-compose.dev.yml up -d postgres mailhog
 
   # Instalar dependencias backend
   cd backend && npm install
