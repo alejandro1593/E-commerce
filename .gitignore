@@ -45,3 +45,7 @@ frontend/dist/
 coverage/
 .tmp/
 screenshot-*.png
+
+# Notas de planificación local
+PLAN_ECOMMERCE.txt
+propuestas-implementacion.txt
