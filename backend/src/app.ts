@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import path from 'path';
+import fs from 'fs';
 import { env } from './config/env';
 import { generalLimiter } from './shared/middleware/rateLimit.middleware';
 import { errorHandler } from './shared/middleware/error.middleware';
@@ -27,7 +29,18 @@ import * as adminController from './modules/auth/admin.controller';
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      'img-src': ["'self'", 'data:', 'https://images.unsplash.com'],
+      'script-src': ["'self'", 'https://js.stripe.com'],
+      'frame-src': ["'self'", 'https://js.stripe.com', 'https://hooks.stripe.com'],
+      'connect-src': ["'self'", 'https://api.stripe.com'],
+      'font-src': ["'self'", 'https:'],
+    },
+  },
+}));
 app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(cookieParser());
 
@@ -63,6 +76,14 @@ app.get('/api/v1/admin/orders', authenticate, authorize('ADMIN'), adminControlle
 app.put('/api/v1/admin/orders/:id/status', authenticate, authorize('ADMIN'), adminController.updateOrderStatus);
 app.get('/api/v1/admin/users', authenticate, authorize('ADMIN'), adminController.getAllUsers);
 app.put('/api/v1/admin/users/:id', authenticate, authorize('ADMIN'), adminController.updateUser);
+
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get(/^\/(?!api(?:\/|$)).*/, (_req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 app.use(errorHandler);
 
